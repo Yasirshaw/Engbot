@@ -96,7 +96,7 @@ def manual_word_of_the_day(message):
     send_word_of_the_day()
 
 # Schedule the bot to send the word of the day at 4 PM Saudi Arabia time
-schedule.every().day.at("16:00").do(send_word_of_the_day)
+schedule.every().day.at("14:00").do(send_word_of_the_day)
 
 # Polling and scheduling loop
 while True:
