@@ -4,8 +4,9 @@ import schedule
 import time
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
+import threading
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -95,16 +96,31 @@ def send_word_of_the_day():
 def manual_word_of_the_day(message):
     send_word_of_the_day()
 
-# Schedule the bot to send the word of the day at 4 PM Saudi Arabia time
-schedule.every().day.at("09:00").do(send_word_of_the_day)
+# Get the current time in Saudi timezone
+def get_saudi_time():
+    return datetime.now(saudi_tz)
 
-# Polling and scheduling loop
-while True:
-    # Check for scheduled tasks (like sending at 4 PM Saudi time)
-    schedule.run_pending()
+# Function to schedule tasks in Saudi time
+def schedule_in_saudi_time(hour, minute):
+    current_time = get_saudi_time()
+    schedule_time = current_time.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if schedule_time < current_time:
+        schedule_time += timedelta(days=1)
+    return schedule_time.strftime("%H:%M")
 
-    # Polling for manual command triggers
-    bot.polling(none_stop=True)
+# Adjust the schedule to run at 9 AM Saudi time
+schedule_time = schedule_in_saudi_time(10, 0)
+schedule.every().day.at(schedule_time).do(send_word_of_the_day)
 
-    # Prevent CPU overload
-    time.sleep(60)  # Check every minute for scheduled tasks
+# Function to run schedule in a separate thread
+def run_schedule():
+    while True:
+        schedule.run_pending()
+        time.sleep(60)  # Check every minute for scheduled tasks
+
+# Start the scheduler in a separate thread
+schedule_thread = threading.Thread(target=run_schedule)
+schedule_thread.start()
+
+# Poll for bot commands in the main thread
+bot.polling(none_stop=True)
