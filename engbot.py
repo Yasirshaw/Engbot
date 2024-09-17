@@ -108,8 +108,8 @@ def schedule_in_saudi_time(hour, minute):
         schedule_time += timedelta(days=1)
     return schedule_time.strftime("%H:%M")
 
-# Adjust the schedule to run at 9 AM Saudi time
-schedule_time = schedule_in_saudi_time(10, 0)
+# Adjust the schedule to run at 11:50 AM Saudi time
+schedule_time = schedule_in_saudi_time(11, 50)
 schedule.every().day.at(schedule_time).do(send_word_of_the_day)
 
 # Function to run schedule in a separate thread
