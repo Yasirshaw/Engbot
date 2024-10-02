@@ -1,28 +1,24 @@
 import pandas as pd
 import telebot
-import schedule
-import time
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.executors.pool import ThreadPoolExecutor
 import logging
 import os
 from datetime import datetime, timedelta
 import pytz
-import threading
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
 
 # Initialize the Telegram bot with your token
-API_TOKEN = '7364384207:AAGFQEJ6-SdGoZSuSc3WATxwZjDnBlgFHj8'
+API_TOKEN = '7364384207:AAGFQEJ6-SdGoZSuSc3WATxwZjDnBlgFHj8'  # Replace with your actual bot token
 bot = telebot.TeleBot(API_TOKEN)
 
 # Use your actual channel ID
-channel_id = '-1001798059502'
+channel_id = -1001798059502  # Replace with your actual channel ID
 
 # Define the timezone for Saudi Arabia
 saudi_tz = pytz.timezone('Asia/Riyadh')
-
-# File to track the last sent word index
-tracking_file = 'data/last_word_index.txt'
 
 # Function to load the words and definitions from the Excel sheet
 def load_words_from_excel():
@@ -36,23 +32,25 @@ def load_words_from_excel():
         logging.error(f"An error occurred while loading the Excel file: {e}")
         return pd.DataFrame()
 
-# Function to get the next word index
+# Function to get the next word index from file
 def get_next_word_index():
-    if not os.path.exists(tracking_file):
-        return 0  # Start from the first word if the file does not exist
-
-    with open(tracking_file, 'r') as file:
-        try:
+    try:
+        with open('data/last_word_index.txt', 'r') as file:
             index = int(file.read().strip())
-        except ValueError:
-            index = 0  # Default to 0 if there's an issue with reading the file
+            logging.info(f"Loaded index: {index}")
+            return index
+    except FileNotFoundError:
+        logging.error("last_word_index.txt not found, starting from index 0")
+        return 0
+    except ValueError:
+        logging.error("Value error encountered, starting from index 0")
+        return 0
 
-    return index
-
-# Function to update the last sent word index
+# Function to update the last sent word index in file
 def update_last_word_index(index):
-    with open(tracking_file, 'w') as file:
+    with open('data/last_word_index.txt', 'w') as file:
         file.write(str(index))
+        logging.info(f"Updated index to: {index}")
 
 # Function to send the word of the day from the Excel sheet
 def send_word_of_the_day():
@@ -96,31 +94,29 @@ def send_word_of_the_day():
 def manual_word_of_the_day(message):
     send_word_of_the_day()
 
-# Get the current time in Saudi timezone
-def get_saudi_time():
-    return datetime.now(saudi_tz)
+# Initialize the scheduler
+executors = {
+    'default': ThreadPoolExecutor(1),
+}
+scheduler = BackgroundScheduler(executors=executors, timezone=pytz.utc)
+scheduler.start()
 
-# Function to schedule tasks in Saudi time
-def schedule_in_saudi_time(hour, minute):
-    current_time = get_saudi_time()
-    schedule_time = current_time.replace(hour=hour, minute=minute, second=0, microsecond=0)
-    if schedule_time < current_time:
-        schedule_time += timedelta(days=1)
-    return schedule_time.strftime("%H:%M")
+# Function to schedule the job at 5:25 PM Saudi time
+def schedule_job_at_saudi_time(hour, minute):
+    # Get the next occurrence of the specified time in Saudi timezone
+    now_saudi = datetime.now(saudi_tz)
+    run_time_saudi = now_saudi.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if run_time_saudi <= now_saudi:
+        run_time_saudi += timedelta(days=1)
+    # Convert to UTC
+    run_time_utc = run_time_saudi.astimezone(pytz.utc)
 
-# Adjust the schedule to run at 11:50 AM Saudi time
-schedule_time = schedule_in_saudi_time(11, 50)
-schedule.every().day.at(schedule_time).do(send_word_of_the_day)
+    # Schedule the job
+    scheduler.add_job(send_word_of_the_day, 'cron', hour=run_time_utc.hour, minute=run_time_utc.minute)
+    logging.info(f"Scheduled job at {run_time_utc.strftime('%Y-%m-%d %H:%M:%S %Z')} UTC (Corresponds to {hour}:{minute} Saudi Time)")
 
-# Function to run schedule in a separate thread
-def run_schedule():
-    while True:
-        schedule.run_pending()
-        time.sleep(60)  # Check every minute for scheduled tasks
+# Schedule the job at 11:25 AM Saudi time
+schedule_job_at_saudi_time(11, 25)
 
-# Start the scheduler in a separate thread
-schedule_thread = threading.Thread(target=run_schedule)
-schedule_thread.start()
-
-# Poll for bot commands in the main thread
+# Start polling for bot commands
 bot.polling(none_stop=True)

@@ -5,7 +5,11 @@ __pycache__/
 
 # Virtual environment
 venv/
+<<<<<<< HEAD
 .venv/
+=======
+.vene/
+>>>>>>> 27066070a3e891eddf04cded4508ff82c5ea353e
 
 # Distribution / packaging
 build/
