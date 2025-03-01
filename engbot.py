@@ -61,6 +61,8 @@ def send_word_of_the_day():
         return
 
     index = get_next_word_index()
+    
+    # Check if index is valid BEFORE using it
     if index >= len(words_df):
         index = 0  # Reset to the first word if index is out of bounds
 
@@ -116,7 +118,7 @@ def schedule_job_at_saudi_time(hour, minute):
     logging.info(f"Scheduled job at {run_time_utc.strftime('%Y-%m-%d %H:%M:%S %Z')} UTC (Corresponds to {hour}:{minute} Saudi Time)")
 
 # Schedule the job at 11:25 AM Saudi time
-schedule_job_at_saudi_time(11, 25)
+schedule_job_at_saudi_time(12, 10)
 
 # Start polling for bot commands
 bot.polling(none_stop=True)
