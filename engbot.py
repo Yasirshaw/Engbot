@@ -118,7 +118,7 @@ def schedule_job_at_saudi_time(hour, minute):
     logging.info(f"Scheduled job at {run_time_utc.strftime('%Y-%m-%d %H:%M:%S %Z')} UTC (Corresponds to {hour}:{minute} Saudi Time)")
 
 # Schedule the job at 11:25 AM Saudi time
-schedule_job_at_saudi_time(12, 25)
+schedule_job_at_saudi_time(12, 27)
 
 # Start polling for bot commands
 bot.polling(none_stop=True)
